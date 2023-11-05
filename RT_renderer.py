@@ -21,7 +21,7 @@ class Renderer():
                 # shoot multiple rays at random locations inside the pixel
                 for spp in range(self.camera.samples_per_pixel):
                     generated_ray = self.camera.get_ray(i, j)
-                    pixel_color = pixel_color + self.integrator.compute_scattering(generated_ray, self.scene)
+                    pixel_color = pixel_color + self.integrator.compute_scattering(generated_ray, self.scene, self.camera.max_depth)
 
                 self.camera.write_to_film(i, j, pixel_color)
 

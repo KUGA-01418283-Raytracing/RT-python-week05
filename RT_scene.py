@@ -3,9 +3,11 @@ import RT_utility as rtu
 import numpy as np
 
 class Scene:
-    def __init__(self) -> None:
+    def __init__(self, cBgcolor=rtu.Color(0.01,0.01,0.01)) -> None:
         self.obj_list = []
         self.hit_list = None
+        self.background_color = cBgcolor
+        self.light_list = []
         pass
 
     def add_object(self, obj):
@@ -38,5 +40,19 @@ class Scene:
     
     def getHitList(self):
         return self.hit_list
+
+    def getBackgroundColor(self):
+        return self.background_color
+
+    def get_sky_background_color(self, rGen_ray):
+        unit_direction = rtu.Vec3.unit_vector(rGen_ray.getDirection())
+        a = (unit_direction.y() + 1.0)*0.5
+        return rtu.Color(1,1,1)*(1.0-a) + rtu.Color(0.5, 0.7, 1.0)*a
+    
+    def find_lights(self):
+        np_obj_list = np.array(self.obj_list)
+        for obj in np_obj_list:
+            if obj.material.is_light():
+                self.light_list.append(obj)
 
 

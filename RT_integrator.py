@@ -8,7 +8,13 @@ class Integrator():
     def __init__(self) -> None:
         pass
 
-    def compute_scattering(self, rGen_ray, scene):
+    def compute_scattering(self, rGen_ray, scene, maxDepth):
+        if maxDepth <= 0:
+            # for each light
+            # find if light can directly shine on this point
+            # return the light color
+            return rtu.Color()
+
         # if the generated ray hits an object
         found_hit = scene.find_intersection(rGen_ray, rtu.Interval(0.000001, rtu.infinity_number))
         if found_hit == True:
@@ -16,13 +22,16 @@ class Integrator():
             hinfo = scene.getHitList()
             # get the material of the object
             hmat = hinfo.getMaterial()
+            # compute scattering
+            sinfo = hmat.scattering(rGen_ray, hinfo)
+            # if no scattering (It is a light source)
+            if sinfo is None:
+                # return Le
+                return hmat.emitting()  
             # return the color
-            return hmat.color_albedo
+            return self.compute_scattering(rtr.Ray(hinfo.getP(), sinfo.scattered_ray.getDirection()), scene, maxDepth-1) * sinfo.attenuation_color
 
-        return self.background_color(rGen_ray)
-
-    def background_color(self, rGen_ray):
-        unit_direction = rtu.Vec3.unit_vector(rGen_ray.getDirection())
-        a = (unit_direction.y() + 1.0)*0.5
-        return rtu.Color(1,1,1)*(1.0-a) + rtu.Color(0.5, 0.7, 1.0)*a
+        # previous background color
+        # return scene.get_sky_background_color(rGen_ray)
+        return scene.getBackgroundColor()
 
