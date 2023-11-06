@@ -29,6 +29,7 @@ class Integrator():
                 return hmat.emitting()
 
 
+            # Class assignemnt (1.)
             Le = rtu.Color()
             # if direct lighting is enabled
             if self.bool_direct_lighting:

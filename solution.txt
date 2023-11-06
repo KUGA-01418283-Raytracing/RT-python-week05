@@ -1,67 +1,126 @@
-(1.) Implement 'intersect()' method of the Sphere class.
-    def intersect(self, rRay, cInterval):
-        
-        # find roots of the quadratic solution.
-        if tmin < 0:
-            return None
-        
-        oc = rRay.getOrigin() - self.center
-        a = rRay.getDirection().len_squared()
-        half_b = rtu.Vec3.dot_product(oc, rRay.getDirection())
-        c = oc.len_squared() - self.radius*self.radius
-        discriminant = half_b*half_b - a*c 
+(1.)
+    def compute_scattering(self, rGen_ray, scene, maxDepth):
 
-        if discriminant < 0:
-            return None
-        sqrt_disc = math.sqrt(discriminant)
-        root = (-half_b - sqrt_disc) / a 
+        if maxDepth <= 0:
+            return rtu.Color()
 
-        # check if the positive root is in the interval
-        if root <= tmin or root >= tmax:
-            root = (-half_b + sqrt_disc) / a 
-            if root <= tmin or root >= tmax:
-                return None
-            
-        # generate and return a hit info
-        hit_t = root
-        hit_point = rRay.at(root)
-        hit_normal = (hit_point - self.center) / self.radius
-        hinfo = rtu.Hitinfo(hit_point, hit_normal, hit_t, self.material)
-        hinfo.set_face_normal(rRay, hit_normal) 
-        return hinfo
+        # if the generated ray hits an object
+        found_hit = scene.find_intersection(rGen_ray, rtu.Interval(0.000001, rtu.infinity_number))
+        if found_hit == True:
+            # get the hit info
+            hinfo = scene.getHitList()
+            # get the material of the object
+            hmat = hinfo.getMaterial()
+            # compute scattering
+            sinfo = hmat.scattering(rGen_ray, hinfo)
+            # if no scattering (It is a light source)
+            if sinfo is None:
+                # return Le
+                return hmat.emitting()
 
-(2.) Implement calculations of the quad parameters.
-    self.uxv = rtu.Vec3.cross_product(self.Uvec, self.Vvec)
-    self.normal = rtu.Vec3.unit_vector(self.uxv)
-    self.D = rtu.Vec3.dot_product(self.normal, self.Qpoint)
-    self.Wvec = self.uxv / rtu.Vec3.dot_product(self.uxv, self.uxv)
 
-(3.) Implement 'intersect()' method of the Quad class.
-    def intersect(self, rRay, cInterval):
+            # Class assignemnt (1.)
+            Le = rtu.Color()
+            # if direct lighting is enabled
+            if self.bool_direct_lighting:
+                # for each point light
+                for light in scene.point_light_list:
+                    # check if there is an occlusion between a point light and a surface point.
+                    tolight_dir = light.center - hinfo.getP()
+                    tolight_ray = rtr.Ray(hinfo.getP(), tolight_dir)
+                    max_distance = tolight_dir.len()
+                    occlusion_hit = scene.find_occlusion(tolight_ray, rtu.Interval(0.000001, max_distance))
+                    # if not occluded.
+                    if not occlusion_hit:
+                        # accumulate all unoccluded light
+                        Le = Le + (light.material.emitting() * (1/max_distance))
 
-        denom = rtu.Vec3.dot_product(self.normal, rRay.getDirection())
-        # if parallel
-        if rtu.Interval.near_zero(denom):
-            return None
+            # return the color
+            return Le + self.compute_scattering(rtr.Ray(hinfo.getP(), sinfo.scattered_ray.getDirection()), scene, maxDepth-1) * sinfo.attenuation_color
 
-        # if the ray hits the plane.
-        t = (self.D - rtu.Vec3.dot_product(self.normal, rRay.getOrigin())) / denom
-        if not cInterval.contains(t):
-            return None
-        
-        hit_t = t
-        hit_point = rRay.at(t)
-        hit_normal = self.normal
+        return scene.getBackgroundColor()
 
-        # determine if the intersection point lies on the quad's plane.
-        planar_hit = hit_point - self.Qpoint
-        alpha = rtu.Vec3.dot_product(self.Wvec, rtu.Vec3.cross_product(planar_hit, self.Vvec))
-        beta = rtu.Vec3.dot_product(self.Wvec, rtu.Vec3.cross_product(self.Uvec, planar_hit))
-        if self.is_interior(alpha, beta) is None:
-            return None
+(2.)
+def renderPointLight():
 
-        # generate and return a hit info
-        hinfo = rtu.Hitinfo(hit_point, hit_normal, hit_t, self.material)
-        hinfo.set_face_normal(rRay, hit_normal)
-        return hinfo
+    main_camera = rtc.Camera()
+    main_camera.aspect_ratio = 1.0
+    main_camera.img_width = 400
+    main_camera.center = rtu.Vec3(0,0,0)
+    main_camera.samples_per_pixel = 10
+    main_camera.max_depth = 4
+    main_camera.vertical_fov = 90
+    main_camera.look_from = rtu.Vec3(0, 0, 10)
+    main_camera.look_at = rtu.Vec3(0, 0, 0)
+    main_camera.vec_up = rtu.Vec3(0, 1, 0)
 
+    defocus_angle = 0.0
+    focus_distance = 3.0
+    main_camera.init_camera(defocus_angle, focus_distance)
+    # add objects to the scene
+
+    left_red = rtm.Lambertian(    rtu.Color(1.0, 0.2, 0.2))
+    back_green = rtm.Lambertian(  rtu.Color(0.2, 1.0, 0.2))
+    right_blue = rtm.Lambertian(  rtu.Color(0.2, 0.2, 1.0))
+    upper_orange = rtm.Lambertian(rtu.Color(1.0, 0.5, 0.0))
+    lower_teal = rtm.Lambertian(  rtu.Color(0.2, 0.8, 0.8))
+    
+    point_light = rtl.Diffuse_light(rtu.Color(1.0, 1.0, 1.0))
+
+    world = rts.Scene()
+    world.add_object(rto.Quad(rtu.Vec3(-3,-2, 5), rtu.Vec3(0, 0,-4), rtu.Vec3(0, 4, 0), left_red))
+    world.add_object(rto.Quad(rtu.Vec3(-2,-2, 0), rtu.Vec3(4, 0, 0), rtu.Vec3(0, 4, 0), back_green))
+    world.add_object(rto.Quad(rtu.Vec3( 3,-2, 1), rtu.Vec3(0, 0, 4), rtu.Vec3(0, 4, 0), right_blue))
+    world.add_object(rto.Quad(rtu.Vec3(-2, 3, 1), rtu.Vec3(4, 0, 0), rtu.Vec3(0, 0, 4), upper_orange))
+    world.add_object(rto.Quad(rtu.Vec3(-2,-3, 5), rtu.Vec3(4, 0, 0), rtu.Vec3(0, 0,-4), lower_teal))
+
+    world.add_object(rto.Sphere(rtu.Vec3(0, 0, 0), 0.1, point_light))
+
+    intg = rti.Integrator()
+
+    renderer = rtren.Renderer(main_camera, intg, world)
+    renderer.render()
+    renderer.write_img2png('week05_point_light.png')    
+
+(5.)
+def renderPointLightShadow():
+
+    main_camera = rtc.Camera()
+    main_camera.aspect_ratio = 1.0
+    main_camera.img_width = 400
+    main_camera.center = rtu.Vec3(0,0,0)
+    main_camera.samples_per_pixel = 10
+    main_camera.max_depth = 4
+    main_camera.vertical_fov = 90
+    main_camera.look_from = rtu.Vec3(0, 0, 10)
+    main_camera.look_at = rtu.Vec3(0, 0, 0)
+    main_camera.vec_up = rtu.Vec3(0, 1, 0)
+
+    defocus_angle = 0.0
+    focus_distance = 3.0
+    main_camera.init_camera(defocus_angle, focus_distance)
+    # add objects to the scene
+
+    left_red = rtm.Lambertian(    rtu.Color(1.0, 0.2, 0.2))
+    back_green = rtm.Lambertian(  rtu.Color(0.2, 1.0, 0.2))
+    right_blue = rtm.Lambertian(  rtu.Color(0.2, 0.2, 1.0))
+    upper_orange = rtm.Lambertian(rtu.Color(1.0, 0.5, 0.0))
+    lower_teal = rtm.Lambertian(  rtu.Color(0.2, 0.8, 0.8))
+
+    point_light = rtl.Diffuse_light(rtu.Color(1.0, 1.0, 1.0))
+
+    world = rts.Scene()
+    world.add_object(rto.Quad(rtu.Vec3(-3,-2, 5), rtu.Vec3(0, 0,-4), rtu.Vec3(0, 4, 0), left_red))
+    world.add_object(rto.Quad(rtu.Vec3(-2,-2, 0), rtu.Vec3(4, 0, 0), rtu.Vec3(0, 4, 0), back_green))
+    world.add_object(rto.Quad(rtu.Vec3( 3,-2, 1), rtu.Vec3(0, 0, 4), rtu.Vec3(0, 4, 0), right_blue))
+    world.add_object(rto.Quad(rtu.Vec3(-2, 3, 1), rtu.Vec3(4, 0, 0), rtu.Vec3(0, 0, 4), upper_orange))
+    world.add_object(rto.Quad(rtu.Vec3(-2,-3, 5), rtu.Vec3(4, 0, 0), rtu.Vec3(0, 0,-4), lower_teal))
+
+    world.add_object(rto.Sphere(rtu.Vec3(4, 0, 0), 0.1, point_light))
+
+    intg = rti.Integrator()
+
+    renderer = rtren.Renderer(main_camera, intg, world)
+    renderer.render()
+    renderer.write_img2png('week05_point_light_shadow.png')    
+    
