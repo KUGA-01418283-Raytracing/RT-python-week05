@@ -1,6 +1,7 @@
 # Scene class
 import RT_utility as rtu
 import numpy as np
+import RT_object as rto
 
 class Scene:
     def __init__(self, cBgcolor=rtu.Color(0.01,0.01,0.01)) -> None:
@@ -8,6 +9,7 @@ class Scene:
         self.hit_list = None
         self.background_color = cBgcolor
         self.light_list = []
+        self.point_light_list = []
         pass
 
     def add_object(self, obj):
@@ -34,6 +36,23 @@ class Scene:
         # return if found any hit or not
         return found_hit
 
+    # assume that if there is no occlusion, there is only 1 object is hit in the interval.
+    # otherwise there will be an occlusion in the interval.
+    def find_occlusion(self, vRay, cInterval):
+        np_obj_list = np.array(self.obj_list)
+        closest_tmax = cInterval.max_val
+        number_of_hit = 0
+        # for each object
+        for obj in np_obj_list:
+            # find an intersection
+            hinfo = obj.intersect(vRay, rtu.Interval(cInterval.min_val, closest_tmax))
+            if hinfo is not None:
+                number_of_hit = number_of_hit + 1 
+
+        # if more than 1 object is hit then there is an occlusion.
+        if number_of_hit > 1:
+            return True
+        return False
 
     def getHitNormalAt(self, idx):
         return self.hit_list[idx].getNormal() 
@@ -55,4 +74,10 @@ class Scene:
             if obj.material.is_light():
                 self.light_list.append(obj)
 
+        self.find_point_lights()
+
+    def find_point_lights(self):
+        for light in self.light_list:
+            if isinstance(light, rto.Sphere):
+                self.point_light_list.append(light)
 

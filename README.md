@@ -14,4 +14,8 @@ The codes were rewritten and modified from https://raytracing.github.io/books/Ra
 **Class assignment**
 
 1. Implement direct lighting effect in the 'compute_scattering()' method. As of now, the direct lighting only handle point lights.
+2. Add a point light source (white color [1.0,1.0,1.0]) at the location (0,0,0) and render it with the scene in 'renderPointLight()'.
+3. Keep quad patches on the left and the right (remove the rest). Keep the point light at the location (0,0,0). Render it and compare the differences between results from (2.) and (3.). 
+4. Explain why the result from (3.) has different illumination compared to (2.).
+5. Change the location of the point light to (4,0,0). Explain the rendered result.
 

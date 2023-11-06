@@ -14,6 +14,9 @@ class Renderer():
         pass
 
     def render(self):
+        # gather lights to the light list
+        self.scene.find_lights()
+                
         for j in range(self.camera.img_height):
             for i in range(self.camera.img_width):
 
