@@ -18,4 +18,4 @@ The codes were rewritten and modified from https://raytracing.github.io/books/Ra
 3. Keep quad patches on the left and the right (remove the rest). Keep the point light at the location (0,0,0). Render it and compare the differences between results from (2.) and (3.). 
 4. Explain why the result from (3.) has different illumination compared to (2.).
 5. Add a render function called 'renderPointLightShadow()' by changing the location of the point light to (4,0,0). Render the scen and explain the rendered result.
-
+6. Create a scene containing spheres and quads then light the scene up with a point light.
