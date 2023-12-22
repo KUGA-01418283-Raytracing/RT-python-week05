@@ -28,25 +28,20 @@ class Integrator():
                 # return Le
                 return hmat.emitting()
 
-
-            # Class assignemnt (1.)
             Le = rtu.Color()
             # if direct lighting is enabled
             if self.bool_direct_lighting:
                 # for each point light
                 for light in scene.point_light_list:
                     # check if there is an occlusion between a point light and a surface point.
-                    tolight_dir = light.center - hinfo.getP()
-                    tolight_ray = rtr.Ray(hinfo.getP(), tolight_dir)
-                    max_distance = tolight_dir.len()
-                    occlusion_hit = scene.find_occlusion(tolight_ray, rtu.Interval(0.000001, max_distance))
+
                     # if not occluded.
-                    if not occlusion_hit:
+                    if None:
                         # accumulate all unoccluded light
-                        Le = Le + (light.material.emitting() * (1/max_distance))
+                        Le = Le + None
 
             # return the color
-            return Le + self.compute_scattering(rtr.Ray(hinfo.getP(), sinfo.scattered_ray.getDirection()), scene, maxDepth-1) * sinfo.attenuation_color
+            return (Le * sinfo.attenuation_color) + self.compute_scattering(rtr.Ray(hinfo.getP(), sinfo.scattered_ray.getDirection()), scene, maxDepth-1) * sinfo.attenuation_color
 
         return scene.getBackgroundColor()
 

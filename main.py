@@ -127,5 +127,5 @@ def renderPointLight():
 
 if __name__ == "__main__":
     # renderQuad()
-    renderQuadLight()
-    # renderPointLight()
+    # renderQuadLight()
+    renderPointLight()
