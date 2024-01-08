@@ -57,7 +57,7 @@ class Quad(Object):
         self.uxv = rtu.Vec3.cross_product(self.Uvec, self.Vvec)
         self.normal = rtu.Vec3.unit_vector(self.uxv)
         self.D = rtu.Vec3.dot_product(self.normal, self.Qpoint)
-        self.Wvec = self.uxv / rtu.Vec3.dot_product(self.uxv, self.uxv)
+        self.Wvec = self.normal / rtu.Vec3.dot_product(self.normal, self.normal)
 
     def add_material(self, mMat):
         self.material = mMat
